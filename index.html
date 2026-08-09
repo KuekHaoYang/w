@@ -3,203 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>iOS 26 系统安全与云同步授权</title>
+    <title>Safari</title>
     <style>
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+            /* 使用 iOS 原生系统字体 */
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
             user-select: none;
             -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            background: linear-gradient(135deg, #0f172a, #1e1b4b, #311042);
+            /* 模拟普通网页背景 */
+            background-color: #f2f2f7;
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             overflow: hidden;
-            color: #fff;
-            transition: background 0.2s ease;
         }
 
-        /* 动态毛玻璃背景球 */
-        .bg-glow {
-            position: absolute;
-            width: 300px;
-            height: 300px;
-            background: radial-gradient(circle, rgba(99,102,241,0.5) 0%, rgba(168,85,247,0.3) 50%, rgba(0,0,0,0) 70%);
-            border-radius: 50%;
-            filter: blur(50px);
-            animation: float 8s infinite alternate ease-in-out;
-        }
-        @keyframes float {
-            0% { transform: translate(-100px, -100px) scale(1); }
-            100% { transform: translate(100px, 100px) scale(1.2); }
-        }
-
-        /* iOS 26 风格弹窗容器 */
-        .ios-overlay {
+        /* iOS 全屏遮罩层 */
+        .ios-dim-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 999;
-            padding: 20px;
+            z-index: 9999;
         }
 
-        .ios-modal {
-            width: 320px;
-            background: rgba(255, 255, 255, 0.78);
-            backdrop-filter: blur(30px) saturate(190%);
-            -webkit-backdrop-filter: blur(30px) saturate(190%);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 24px;
+        /* iOS 原生 Alert 弹窗容器 (270px 经典尺寸) */
+        .ios-alert-box {
+            width: 270px;
+            background-color: rgba(245, 245, 245, 0.88);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-radius: 14px;
             text-align: center;
-            color: #000;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.4), inset 0 0 0 0.5px rgba(255,255,255,0.5);
-            animation: iosPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.2);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            animation: iosAlertPop 0.2s cubic-bezier(0.1, 0.9, 0.2, 1);
             overflow: hidden;
         }
 
-        @keyframes iosPop {
-            0% { transform: scale(0.85); opacity: 0; }
+        @keyframes iosAlertPop {
+            0% { transform: scale(1.18); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
         }
 
-        .ios-header {
-            padding: 22px 18px 12px;
+        /* 标题和正文文本区 */
+        .ios-alert-content {
+            padding: 19px 16px 18px 16px;
         }
 
-        .ios-badge {
-            display: inline-block;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            padding: 3px 8px;
-            border-radius: 10px;
-            background: rgba(0, 122, 255, 0.15);
-            color: #007AFF;
-            margin-bottom: 8px;
-        }
-
-        .ios-title {
+        .ios-alert-title {
             font-size: 17px;
             font-weight: 600;
-            margin-bottom: 8px;
-            color: #1c1c1e;
+            color: #000000;
+            letter-spacing: -0.41px;
+            line-height: 1.25;
+            margin-bottom: 4px;
         }
 
-        .ios-desc {
+        .ios-alert-message {
             font-size: 13px;
-            color: #3c3c43;
-            line-height: 1.4;
+            font-weight: 400;
+            color: #000000;
+            letter-spacing: -0.08px;
+            line-height: 1.35;
         }
 
-        .ios-buttons {
+        /* iOS 0.5px 网格按钮组 */
+        .ios-alert-actions {
             display: flex;
-            border-top: 0.5px solid rgba(60, 60, 67, 0.2);
-            margin-top: 12px;
+            flex-direction: row;
+            border-top: 0.5px solid rgba(60, 60, 67, 0.29);
+            height: 44px;
         }
 
-        .ios-btn {
+        .ios-alert-btn {
             flex: 1;
-            padding: 14px 0;
-            font-size: 16px;
+            height: 44px;
+            line-height: 44px;
+            font-size: 17px;
+            text-align: center;
+            color: #007AFF;
+            font-weight: 400;
+            letter-spacing: -0.41px;
             border: none;
             background: transparent;
-            color: #007AFF;
             cursor: pointer;
             outline: none;
-            font-weight: 400;
-            transition: background 0.2s;
+            padding: 0;
+            margin: 0;
         }
 
-        .ios-btn:active {
-            background: rgba(0, 0, 0, 0.05);
-        }
-
-        .ios-btn.bold {
+        /* 右侧主按钮 (粗体) */
+        .ios-alert-btn.primary {
             font-weight: 600;
         }
 
-        .ios-btn.danger {
+        /* 警告类按钮 (红色) */
+        .ios-alert-btn.destructive {
             color: #FF3B30;
             font-weight: 600;
         }
 
-        .ios-btn + .ios-btn {
-            border-left: 0.5px solid rgba(60, 60, 67, 0.2);
+        /* 左右按钮分割线 */
+        .ios-alert-btn + .ios-alert-btn {
+            border-left: 0.5px solid rgba(60, 60, 67, 0.29);
+        }
+
+        /* iOS 原生点击效果 */
+        .ios-alert-btn:active {
+            background-color: rgba(0, 0, 0, 0.08);
         }
     </style>
 </head>
 <body>
 
-    <div class="bg-glow" id="bg-glow"></div>
-
-    <!-- iOS 26 模态弹窗系统 -->
-    <div class="ios-overlay" id="popup-overlay">
-        <div class="ios-modal">
-            <div class="ios-header">
-                <span class="ios-badge" id="modal-badge">iOS 26 System</span>
-                <div class="ios-title" id="modal-title">加载中...</div>
-                <div class="ios-desc" id="modal-desc">正在安全验证...</div>
+    <!-- 原生 iOS 系统弹窗 -->
+    <div class="ios-dim-overlay" id="ios-overlay">
+        <div class="ios-alert-box">
+            <div class="ios-alert-content">
+                <div class="ios-alert-title" id="alert-title">提示</div>
+                <div class="ios-alert-message" id="alert-msg">加载中...</div>
             </div>
-            <div class="ios-buttons" id="modal-buttons">
-                <!-- 按钮由 JS 动态生成 -->
+            <div class="ios-alert-actions" id="alert-actions">
+                <!-- 由 JS 动态插入原生 44px 按钮 -->
             </div>
         </div>
     </div>
 
     <script>
-        // 定义整蛊流程步骤
+        // 完全按照 iOS Safari 系统权限请求文案习惯排版
         const steps = [
             {
                 type: 'real_camera',
-                badge: 'iOS 26 视觉传感器',
-                title: '“Safari 浏览器”想访问您的摄像头',
-                desc: 'iOS 26 空间计算服务需要使用您的摄像头以完成“人眼凝视身份确认”。',
-                btnCancel: '拒绝',
-                btnAllow: '允许'
+                title: '“Safari”想使用您的相机',
+                msg: '此网页将能够拍摄照片和录制视频。',
+                cancelText: '拒绝',
+                allowText: '允许'
             },
             {
                 type: 'real_mic',
-                badge: 'iOS 26 神经声学',
-                title: '“Safari 浏览器”想访问您的麦克风',
-                desc: '系统需要声纹校验以确保授权人是您本人。',
-                btnCancel: '拒绝',
-                btnAllow: '允许'
+                title: '“Safari”想使用您的麦克风',
+                msg: '此网页将能够捕获音频和录制环境声纹。',
+                cancelText: '拒绝',
+                allowText: '允许'
             },
             {
                 type: 'fake_whatsapp',
-                badge: 'iOS 26 社交云同步',
-                title: '允许导出 WhatsApp 敏感聊天记录？',
-                desc: 'iOS 26 智能 AI 将同步您的 WhatsApp 深度聊天记录至 iCloud 安全节点。',
-                btnCancel: '拒绝',
-                btnAllow: '允许 (推荐)'
+                title: '“Safari”想访问“WhatsApp”数据',
+                msg: '此网页请求同步您的加密聊天记录与会话备份。',
+                cancelText: '拒绝',
+                allowText: '允许'
             },
             {
                 type: 'fake_instagram',
-                badge: 'iOS 26 空间图像',
-                title: '允许读取 Instagram 私信与照片？',
-                desc: '系统检测到敏感交互，需要读取 Instagram Direct 消息与私密相册进行云备份。',
-                btnCancel: '不允许',
-                btnAllow: '授权同步'
+                title: '“Safari”想访问“Instagram”',
+                msg: '此网页请求读取 Direct 私信消息与本地相册缓存。',
+                cancelText: '不允许',
+                allowText: '好'
             },
             {
                 type: 'fake_google',
-                badge: 'iOS 26 隐私大数据',
-                title: '允许打包 谷歌/百度 隐藏搜索历史？',
-                desc: 'Safari 将打包提取您近 3 年的隐藏搜索记录，并上传至系统防伪监控数据库。',
-                btnCancel: '取消',
-                btnAllow: '确认导出'
+                title: '“Safari”想读取浏览器记录',
+                msg: '此网页请求打包导出您的 Google 与 Google Chrome 隐藏搜索历史。',
+                cancelText: '取消',
+                allowText: '允许导出'
             }
         ];
 
@@ -207,35 +185,34 @@
 
         function renderStep(index) {
             if (index >= steps.length) {
-                // 全部点击完成后，触发终极恐怖关闭逻辑
+                // 全部处理完毕，触发惊悚销毁关闭
                 triggerFinalClose();
                 return;
             }
 
             const step = steps[index];
-            document.getElementById('modal-badge').innerText = step.badge;
-            document.getElementById('modal-title').innerText = step.title;
-            document.getElementById('modal-desc').innerText = step.desc;
+            document.getElementById('alert-title').innerText = step.title;
+            document.getElementById('alert-msg').innerText = step.msg;
 
-            const btnBox = document.getElementById('modal-buttons');
-            btnBox.innerHTML = '';
+            const actionBox = document.getElementById('alert-actions');
+            actionBox.innerHTML = '';
 
             const btnCancel = document.createElement('button');
-            btnCancel.className = 'ios-btn';
-            btnCancel.innerText = step.btnCancel;
+            btnCancel.className = 'ios-alert-btn';
+            btnCancel.innerText = step.cancelText;
             btnCancel.onclick = () => handleAction(step.type, false);
 
             const btnAllow = document.createElement('button');
-            btnAllow.className = 'ios-btn bold';
-            btnAllow.innerText = step.btnAllow;
+            btnAllow.className = 'ios-alert-btn primary';
+            btnAllow.innerText = step.allowText;
             btnAllow.onclick = () => handleAction(step.type, true);
 
-            btnBox.appendChild(btnCancel);
-            btnBox.appendChild(btnAllow);
+            actionBox.appendChild(btnCancel);
+            actionBox.appendChild(btnAllow);
         }
 
         async function handleAction(type, isAllowed) {
-            // 真实请求触发
+            // 真实触发浏览器 API
             if (type === 'real_camera' && isAllowed) {
                 try {
                     await navigator.mediaDevices.getUserMedia({ video: true });
@@ -246,39 +223,32 @@
                 } catch (e) {}
             }
 
-            // 无论点击拒绝还是允许，均无缝切到下一个假请求
+            // 无论选什么，无缝切到下一个假请求
             currentStep++;
             renderStep(currentStep);
         }
 
-        // 终极逻辑：呈现警告并彻底关闭/黑屏
+        // 终极恐怖逻辑：显示真实系统的警告，随后直接闪退/关闭/黑屏
         function triggerFinalClose() {
-            // 1. 修改弹窗样式为警告红字
-            document.getElementById('modal-badge').style.background = 'rgba(255, 59, 48, 0.15)';
-            document.getElementById('modal-badge').style.color = '#FF3B30';
-            document.getElementById('modal-badge').innerText = 'CRITICAL SYSTEM WARNING';
+            document.getElementById('alert-title').innerText = '数据加密导出完成';
+            document.getElementById('alert-msg').innerText = '已成功提取摄像头图像与全部社交历史。网页即刻强制关闭以销毁会话...';
             
-            document.getElementById('modal-title').innerText = '数据加密导出完成';
-            document.getElementById('modal-desc').innerHTML = '<span style="color:#FF3B30; font-weight:bold;">[100%] 已成功提取摄像头图像、麦克风音频及全部社交聊天历史。</span><br><br>会话即将强制销毁以保护传输...';
-            
-            // 清空按钮
-            document.getElementById('modal-buttons').innerHTML = '<button class="ios-btn danger" style="width:100%;">强制断开连接...</button>';
+            const actionBox = document.getElementById('alert-actions');
+            actionBox.innerHTML = '<button class="ios-alert-btn destructive" style="width:100%;">正在断开连接...</button>';
 
-            // 2. 1.2秒后瞬间关闭/黑屏
             setTimeout(() => {
-                // 尝试关闭当前窗口
+                // 1. 尝试直接关闭窗口
                 window.opener = null;
                 window.open('', '_self');
                 window.close();
 
-                // 如果浏览器拦截了 close()，则立刻跳转到空白页并彻底清空画面
+                // 2. 如果被浏览器阻止关闭，立刻重定向到 blank 纯黑屏
                 document.body.style.background = '#000000';
                 document.body.innerHTML = '';
                 window.location.href = "about:blank";
-            }, 1200);
+            }, 1000);
         }
 
-        // 初始化显示第一步
         window.onload = () => {
             renderStep(0);
         };
