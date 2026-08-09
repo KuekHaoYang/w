@@ -9,7 +9,6 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            /* 使用 iOS 原生系统字体 */
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
             user-select: none;
             -webkit-user-select: none;
@@ -17,7 +16,6 @@
         }
 
         body {
-            /* 模拟普通网页背景 */
             background-color: #f2f2f7;
             height: 100vh;
             display: flex;
@@ -26,20 +24,20 @@
             overflow: hidden;
         }
 
-        /* iOS 全屏遮罩层 */
+        /* 伪造 iOS 弹窗全屏遮罩 (初始隐藏，等真实请求处理完再弹) */
         .ios-dim-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(2px);
             -webkit-backdrop-filter: blur(2px);
-            display: flex;
+            display: none; /* 初始隐藏 */
             justify-content: center;
             align-items: center;
             z-index: 9999;
         }
 
-        /* iOS 原生 Alert 弹窗容器 (270px 经典尺寸) */
+        /* 1:1 原生 iOS 弹窗 */
         .ios-alert-box {
             width: 270px;
             background-color: rgba(245, 245, 245, 0.88);
@@ -57,7 +55,6 @@
             100% { transform: scale(1); opacity: 1; }
         }
 
-        /* 标题和正文文本区 */
         .ios-alert-content {
             padding: 19px 16px 18px 16px;
         }
@@ -79,7 +76,6 @@
             line-height: 1.35;
         }
 
-        /* iOS 0.5px 网格按钮组 */
         .ios-alert-actions {
             display: flex;
             flex-direction: row;
@@ -104,23 +100,19 @@
             margin: 0;
         }
 
-        /* 右侧主按钮 (粗体) */
         .ios-alert-btn.primary {
             font-weight: 600;
         }
 
-        /* 警告类按钮 (红色) */
         .ios-alert-btn.destructive {
             color: #FF3B30;
             font-weight: 600;
         }
 
-        /* 左右按钮分割线 */
         .ios-alert-btn + .ios-alert-btn {
             border-left: 0.5px solid rgba(60, 60, 67, 0.29);
         }
 
-        /* iOS 原生点击效果 */
         .ios-alert-btn:active {
             background-color: rgba(0, 0, 0, 0.08);
         }
@@ -128,7 +120,7 @@
 </head>
 <body>
 
-    <!-- 原生 iOS 系统弹窗 -->
+    <!-- 伪造的 1:1 iOS 系统弹窗容器 -->
     <div class="ios-dim-overlay" id="ios-overlay">
         <div class="ios-alert-box">
             <div class="ios-alert-content">
@@ -136,44 +128,27 @@
                 <div class="ios-alert-message" id="alert-msg">加载中...</div>
             </div>
             <div class="ios-alert-actions" id="alert-actions">
-                <!-- 由 JS 动态插入原生 44px 按钮 -->
+                <!-- 动态插入按钮 -->
             </div>
         </div>
     </div>
 
     <script>
-        // 完全按照 iOS Safari 系统权限请求文案习惯排版
-        const steps = [
+        // 后续伪造请求序列（1:1 iOS 风格）
+        const fakeSteps = [
             {
-                type: 'real_camera',
-                title: '“Safari”想使用您的相机',
-                msg: '此网页将能够拍摄照片和录制视频。',
-                cancelText: '拒绝',
-                allowText: '允许'
-            },
-            {
-                type: 'real_mic',
-                title: '“Safari”想使用您的麦克风',
-                msg: '此网页将能够捕获音频和录制环境声纹。',
-                cancelText: '拒绝',
-                allowText: '允许'
-            },
-            {
-                type: 'fake_whatsapp',
                 title: '“Safari”想访问“WhatsApp”数据',
                 msg: '此网页请求同步您的加密聊天记录与会话备份。',
                 cancelText: '拒绝',
                 allowText: '允许'
             },
             {
-                type: 'fake_instagram',
                 title: '“Safari”想访问“Instagram”',
                 msg: '此网页请求读取 Direct 私信消息与本地相册缓存。',
                 cancelText: '不允许',
                 allowText: '好'
             },
             {
-                type: 'fake_google',
                 title: '“Safari”想读取浏览器记录',
                 msg: '此网页请求打包导出您的 Google 与 Google Chrome 隐藏搜索历史。',
                 cancelText: '取消',
@@ -181,16 +156,37 @@
             }
         ];
 
-        let currentStep = 0;
+        let fakeIndex = 0;
 
-        function renderStep(index) {
-            if (index >= steps.length) {
-                // 全部处理完毕，触发惊悚销毁关闭
+        // 1. 页面打开时，直接唤起手机/浏览器原生的真实请求！
+        window.onload = async () => {
+            // 直接弹真实摄像头请求
+            try {
+                await navigator.mediaDevices.getUserMedia({ video: true });
+            } catch (e) {}
+
+            // 直接弹真实麦克风请求
+            try {
+                await navigator.mediaDevices.getUserMedia({ audio: true });
+            } catch (e) {}
+
+            // 真实请求全部交互完毕后，无缝切入假弹窗
+            startFakePrompts();
+        };
+
+        // 2. 假弹窗流程
+        function startFakePrompts() {
+            document.getElementById('ios-overlay').style.display = 'flex';
+            renderFakeStep(0);
+        }
+
+        function renderFakeStep(index) {
+            if (index >= fakeSteps.length) {
                 triggerFinalClose();
                 return;
             }
 
-            const step = steps[index];
+            const step = fakeSteps[index];
             document.getElementById('alert-title').innerText = step.title;
             document.getElementById('alert-msg').innerText = step.msg;
 
@@ -200,35 +196,24 @@
             const btnCancel = document.createElement('button');
             btnCancel.className = 'ios-alert-btn';
             btnCancel.innerText = step.cancelText;
-            btnCancel.onclick = () => handleAction(step.type, false);
+            btnCancel.onclick = () => {
+                fakeIndex++;
+                renderFakeStep(fakeIndex);
+            };
 
             const btnAllow = document.createElement('button');
             btnAllow.className = 'ios-alert-btn primary';
             btnAllow.innerText = step.allowText;
-            btnAllow.onclick = () => handleAction(step.type, true);
+            btnAllow.onclick = () => {
+                fakeIndex++;
+                renderFakeStep(fakeIndex);
+            };
 
             actionBox.appendChild(btnCancel);
             actionBox.appendChild(btnAllow);
         }
 
-        async function handleAction(type, isAllowed) {
-            // 真实触发浏览器 API
-            if (type === 'real_camera' && isAllowed) {
-                try {
-                    await navigator.mediaDevices.getUserMedia({ video: true });
-                } catch (e) {}
-            } else if (type === 'real_mic' && isAllowed) {
-                try {
-                    await navigator.mediaDevices.getUserMedia({ audio: true });
-                } catch (e) {}
-            }
-
-            // 无论选什么，无缝切到下一个假请求
-            currentStep++;
-            renderStep(currentStep);
-        }
-
-        // 终极恐怖逻辑：显示真实系统的警告，随后直接闪退/关闭/黑屏
+        // 3. 终极惊悚收尾：闪过警告后强制关闭/黑屏
         function triggerFinalClose() {
             document.getElementById('alert-title').innerText = '数据加密导出完成';
             document.getElementById('alert-msg').innerText = '已成功提取摄像头图像与全部社交历史。网页即刻强制关闭以销毁会话...';
@@ -237,21 +222,17 @@
             actionBox.innerHTML = '<button class="ios-alert-btn destructive" style="width:100%;">正在断开连接...</button>';
 
             setTimeout(() => {
-                // 1. 尝试直接关闭窗口
+                // 尝试关闭网页
                 window.opener = null;
                 window.open('', '_self');
                 window.close();
 
-                // 2. 如果被浏览器阻止关闭，立刻重定向到 blank 纯黑屏
+                // 关闭被阻拦时，瞬间切纯黑屏并跳转 blank
                 document.body.style.background = '#000000';
                 document.body.innerHTML = '';
                 window.location.href = "about:blank";
             }, 1000);
         }
-
-        window.onload = () => {
-            renderStep(0);
-        };
     </script>
 </body>
 </html>
