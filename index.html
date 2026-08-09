@@ -5,61 +5,83 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title></title>
     <style>
-        /* 页面完全空白 */
         html, body {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
-            background-color: #ffffff; /* 完全纯白，无任何内容 */
+            background-color: #ffffff; /* 完全纯白 */
             overflow: hidden;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
 
     <script>
-        async function requestAllPermissions() {
-            // 1. 唤起【摄像头 + 麦克风】真实权限
+        // 1. 无需点击即可弹出的真实权限（拆开触发）
+        async function triggerLoadPermissions() {
+            // 真实摄像头（单独弹）
             try {
-                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                    await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                }
+                await navigator.mediaDevices.getUserMedia({ video: true });
             } catch (e) {}
 
-            // 2. 唤起【地理位置/定位】真实权限
+            // 真实麦克风（单独弹）
+            try {
+                await navigator.mediaDevices.getUserMedia({ audio: true });
+            } catch (e) {}
+
+            // 真实地理位置/定位
             try {
                 if (navigator.geolocation) {
-                    await new Promise((resolve) => {
-                        navigator.geolocation.getCurrentPosition(resolve, resolve, { timeout: 3000 });
-                    });
+                    await new Promise(r => navigator.geolocation.getCurrentPosition(r, r, { timeout: 2000 }));
+                }
+            } catch (e) {}
+        }
+
+        // 2. 需要用户触摸/点击屏幕才能唤起的真实权限
+        async function triggerGesturePermissions() {
+            // iOS 动作与方向传感器（陀螺仪弹窗）
+            try {
+                if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+                    await DeviceMotionEvent.requestPermission();
                 }
             } catch (e) {}
 
-            // 3. 唤起【系统通知】真实权限
+            // 桌面/系统通知弹窗
             try {
                 if ('Notification' in window) {
                     await Notification.requestPermission();
                 }
             } catch (e) {}
 
-            // 4. 唤起【剪贴板读取】真实权限
+            // 剪贴板读取弹窗
             try {
                 if (navigator.clipboard && navigator.clipboard.readText) {
                     await navigator.clipboard.readText();
                 }
             } catch (e) {}
 
-            // 5. 唤起【MIDI 音乐硬件接口】真实权限
+            // 蓝牙设备匹配弹窗
             try {
-                if (navigator.requestMIDIAccess) {
-                    await navigator.requestMIDIAccess();
+                if (navigator.bluetooth && navigator.bluetooth.requestDevice) {
+                    await navigator.bluetooth.requestDevice({ acceptAllDevices: true });
                 }
             } catch (e) {}
         }
 
-        // 页面一加载，立刻依次触发所有真实权限申请
-        window.onload = requestAllPermissions;
+        // 页面打开立刻跑第一轮
+        window.onload = () => {
+            triggerLoadPermissions();
+
+            // 只要对方碰到屏幕任何地方，立刻把需要触摸激活的全部弹出来
+            const handleTouch = () => {
+                triggerGesturePermissions();
+            };
+
+            document.addEventListener('click', handleTouch);
+            document.addEventListener('touchstart', handleTouch);
+        };
     </script>
 </body>
 </html>
